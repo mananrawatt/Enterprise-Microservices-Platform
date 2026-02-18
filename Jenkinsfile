@@ -1,11 +1,17 @@
 pipeline {
-    agent any
+
+    agent {
+        docker {
+            image 'docker:24.0.5'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         CLUSTER_NAME = "enterprise-cluster"
-        IMAGE_NAME = "backend"
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        KUBECONFIG = "/Users/mananrawat/.kube/config"
+        IMAGE_NAME   = "backend"
+        IMAGE_TAG    = "${BUILD_NUMBER}"
+        KUBECONFIG   = "/Users/mananrawat/.kube/config"
     }
 
     stages {
@@ -20,7 +26,7 @@ pipeline {
             steps {
                 sh '''
                 cd services/be
-                docker build -t $IMAGE_NAME:$IMAGE_TAG services/be/
+                docker build -t $IMAGE_NAME:$IMAGE_TAG .
                 '''
             }
         }
@@ -36,27 +42,18 @@ pipeline {
         stage('Deploy Based on Branch') {
             steps {
                 script {
-                    if (env.BRANCH_NAME == 'dev') {
-                        sh '''
-                        kubectl set image deployment/backend \
-                        backend=$IMAGE_NAME:$IMAGE_TAG \
-                        -n dev
-                        '''
+
+                    def namespace = "dev"
+
+                    if (env.BRANCH_NAME == 'main') {
+                        namespace = "prod"
                     }
-                    else if (env.BRANCH_NAME == 'test') {
-                        sh '''
-                        kubectl set image deployment/backend \
-                        backend=$IMAGE_NAME:$IMAGE_TAG \
-                        -n dev
-                        '''
-                    }
-                    else if (env.BRANCH_NAME == 'main') {
-                        sh '''
-                        kubectl set image deployment/backend \
-                        backend=$IMAGE_NAME:$IMAGE_TAG \
-                        -n prod
-                        '''
-                    }
+
+                    sh """
+                    kubectl set image deployment/backend \
+                    backend=$IMAGE_NAME:$IMAGE_TAG \
+                    -n ${namespace}
+                    """
                 }
             }
         }
@@ -64,15 +61,16 @@ pipeline {
         stage('Verify Rollout') {
             steps {
                 script {
-                    if (env.BRANCH_NAME == 'dev') {
-                        sh 'kubectl rollout status deployment/backend -n dev'
+
+                    def namespace = "dev"
+
+                    if (env.BRANCH_NAME == 'main') {
+                        namespace = "prod"
                     }
-                    else if (env.BRANCH_NAME == 'test') {
-                        sh 'kubectl rollout status deployment/backend -n dev'
-                    }
-                    else if (env.BRANCH_NAME == 'main') {
-                        sh 'kubectl rollout status deployment/backend -n prod'
-                    }
+
+                    sh """
+                    kubectl rollout status deployment/backend -n ${namespace}
+                    """
                 }
             }
         }
