@@ -19,6 +19,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
+                cd services/be
                 docker build -t $IMAGE_NAME:$IMAGE_TAG services/backend/
                 '''
             }
