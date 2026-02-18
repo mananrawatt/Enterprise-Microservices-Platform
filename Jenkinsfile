@@ -84,3 +84,10 @@ pipeline {
                     }
 
                     sh """
+                    kubectl rollout status deployment/backend -n ${namespace}
+                    """
+                }
+            }
+        }
+    }
+}
