@@ -43,10 +43,19 @@ pipeline {
             steps {
                 script {
 
-                    def namespace = "dev"
+                    def namespace = ""
 
-                    if (env.BRANCH_NAME == 'main') {
+                    if (env.BRANCH_NAME == 'dev') {
+                        namespace = "dev"
+                    }
+                    else if (env.BRANCH_NAME == 'test') {
+                        namespace = "test"
+                    }
+                    else if (env.BRANCH_NAME == 'main') {
                         namespace = "prod"
+                    }
+                    else {
+                        error("Branch not allowed for deployment")
                     }
 
                     sh """
@@ -62,17 +71,16 @@ pipeline {
             steps {
                 script {
 
-                    def namespace = "dev"
+                    def namespace = ""
 
-                    if (env.BRANCH_NAME == 'main') {
+                    if (env.BRANCH_NAME == 'dev') {
+                        namespace = "dev"
+                    }
+                    else if (env.BRANCH_NAME == 'test') {
+                        namespace = "test"
+                    }
+                    else if (env.BRANCH_NAME == 'main') {
                         namespace = "prod"
                     }
 
                     sh """
-                    kubectl rollout status deployment/backend -n ${namespace}
-                    """
-                }
-            }
-        }
-    }
-}
